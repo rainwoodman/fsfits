@@ -2,6 +2,7 @@ import os.path
 import json
 import numpy
 import pickle
+import bitshuffle
 
 class Block(object):
     def __init__(self, path):
@@ -14,7 +15,7 @@ class Block(object):
             raise IOError("path %s not avalable" % self.path)
 
         self.datafilename = os.path.join(
-                path, 'data.bin')
+                path, 'data.bin.bslz4')
         self.dtypefilename = os.path.join(
                 path, 'dtype.pickle')
         self.metadatafilename = os.path.join(
@@ -50,27 +51,26 @@ class Block(object):
     def __getitem__(self, index):
         assert index is Ellipsis
         with file(self.datafilename, 'r') as ff:
-            data = numpy.fromfile(ff, dtype=self.dtype)
-            data = data.reshape(self.shape)
+            compressed = numpy.fromfile(ff, dtype='uint8')
+            data = bitshuffle.decompress_lz4(compressed, 
+                    self.shape, self.dtype)
+            #data = data.reshape(self.shape)
             return data
 
     def __setitem__(self, index, value):
         assert index is Ellipsis
-        all = value.astype(self.dtype).reshape(self.shape)
-        with file(self.datafilename, 'r+') as ff:
-            all.tofile(ff)
+        data = numpy.empty(self.shape, self.dtype)
+        data[...] = value
+        with file(self.datafilename, 'w') as ff:
+            compressed = bitshuffle.compress_lz4(data)
+            compressed.tofile(ff)
 
     @classmethod
     def create(kls, path, shape, dtype):
         self = kls(path)
         self.dtype = numpy.dtype(dtype)
         self.shape = shape
-        with file(self.datafilename, 'w') as ff:
-            n = numpy.prod(self.shape) * self.dtype.itemsize
-            if n > 0:
-                ff.seek(n - 1)
-                ff.write('\0')
-            pass
+        self[...] = 0
         self.flush()
         return self
 
