@@ -12,21 +12,19 @@ ns = ap.parse_args()
 
 def main():
     fin = fitsio.FITS(ns.input)
-    fout = fsfits.FSHR(ns.output)
+    with fsfits.FSHR.create(ns.output) as fout:
+        for hdui, hdu in enumerate(fin):
+            header = hdu.read_header()
+            header = dict(header)
+            try:
+                data = hdu[:, :]
+            except Exception as e:
+                print e
+                data = numpy.empty(0, dtype='i8')
 
-    for hdui, hdu in enumerate(fin):
-        header = hdu.read_header()
-        header = dict(header)
-        try:
-            data = hdu[:, :]
-        except Exception as e:
-            print e
-            data = numpy.empty(0, dtype='i8')
-
-        block = fout.create_block("HDU-%04d" % hdui,
-                data.shape, data.dtype)
-        block.metadata.update(header)
-        block.flush()
-        block[:] = data
+            with fout.create_block("HDU-%04d" % hdui,
+                    data.shape, data.dtype) as block:
+                block.metadata.update(header)
+                block[:] = data
 
 main()
