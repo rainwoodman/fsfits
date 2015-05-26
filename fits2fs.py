@@ -16,10 +16,15 @@ def main():
         for hdui, hdu in enumerate(fin):
             header = hdu.read_header()
             header = dict(header)
-            try:
-                data = hdu[:, :]
-            except Exception as e:
-                print e
+            type = hdu.get_exttype()
+            if hdu.has_data():
+                if type in (
+                        'BINARY_TBL',
+                        'ASCII_TBL'):
+                    data = hdu[:]
+                elif type in ('IMAGE_HDU'):
+                    data = hdu[:, :]
+            else:
                 data = numpy.empty(0, dtype='i8')
 
             with fout.create_block("HDU-%04d" % hdui,

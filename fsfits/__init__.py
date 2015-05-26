@@ -1,6 +1,7 @@
 import os.path
 import json
 import numpy
+import pickle
 
 class Block(object):
     def __init__(self, path):
@@ -15,7 +16,7 @@ class Block(object):
         self.datafilename = os.path.join(
                 path, 'data.bin')
         self.dtypefilename = os.path.join(
-                path, 'dtype.json')
+                path, 'dtype.pickle')
         self.metadatafilename = os.path.join(
                 path, 'meta.json')
         self.metadata = {}
@@ -24,7 +25,7 @@ class Block(object):
     def open(kls, path):
         self = kls(path)
         with file(self.dtypefilename, 'r') as ff:
-            d = json.load(ff)
+            d = pickle.load(ff)
             self.dtype = numpy.dtype(d['dtype'])
             self.shape = tuple(d['shape'])
         with file(self.metadatafilename, 'r') as ff:
@@ -40,9 +41,9 @@ class Block(object):
     def flush(self):
         with file(self.dtypefilename, 'w') as ff:
             d = {}
-            d['dtype'] = self.dtype.descr if len(self.dtype) else self.dtype.str
+            d['dtype'] = self.dtype
             d['shape'] = self.shape
-            json.dump(d, ff)
+            pickle.dump(d, ff)
         with file(self.metadatafilename, 'w') as ff:
             json.dump(self.metadata, ff)
 
