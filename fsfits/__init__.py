@@ -48,15 +48,15 @@ class Block(object):
             json.dump(self.metadata, ff)
 
     def __getitem__(self, index):
+        assert index is Ellipsis
         with file(self.datafilename, 'r') as ff:
             data = numpy.fromfile(ff, dtype=self.dtype)
             data = data.reshape(self.shape)
-            return data[index]
+            return data
 
     def __setitem__(self, index, value):
-        with file(self.datafilename, 'r+') as ff:
-            all = numpy.fromfile(ff, dtype=self.dtype).reshape(self.shape)
-        all[index] = value
+        assert index is Ellipsis
+        all = value.astype(self.dtype).reshape(self.shape)
         with file(self.datafilename, 'r+') as ff:
             all.tofile(ff)
 

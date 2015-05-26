@@ -30,6 +30,6 @@ def main():
             with fout.create_block("HDU-%04d" % hdui,
                     data.shape, data.dtype) as block:
                 block.metadata.update(header)
-                block[:] = data
+                block[...] = data
 
 main()

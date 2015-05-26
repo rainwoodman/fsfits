@@ -13,6 +13,6 @@ def main():
             hdu = fout[key]
             header = hdu.metadata
             print header
-            data = hdu[:]
+            data = hdu[...]
             print data
 main()
