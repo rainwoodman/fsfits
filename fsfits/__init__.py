@@ -27,8 +27,8 @@ class Block(object):
         self = kls(path)
         with file(self.dtypefilename, 'r') as ff:
             d = pickle.load(ff)
-            self.dtype = numpy.dtype(d['dtype'])
-            self.shape = tuple(d['shape'])
+            self.dtype = d['dtype']
+            self.shape = d['shape']
         with file(self.metadatafilename, 'r') as ff:
             self.metadata.update(json.load(ff)) 
         return self
@@ -50,6 +50,8 @@ class Block(object):
 
     def __getitem__(self, index):
         assert index is Ellipsis
+        if self.dtype is None:
+            return None
         with file(self.datafilename, 'r') as ff:
             compressed = numpy.fromfile(ff, dtype='uint8')
             data = bitshuffle.decompress_lz4(compressed, 
@@ -59,6 +61,7 @@ class Block(object):
 
     def __setitem__(self, index, value):
         assert index is Ellipsis
+        assert self.dtype is not None
         data = numpy.empty(self.shape, self.dtype)
         data[...] = value
         with file(self.datafilename, 'w') as ff:
@@ -68,9 +71,14 @@ class Block(object):
     @classmethod
     def create(kls, path, shape, dtype):
         self = kls(path)
-        self.dtype = numpy.dtype(dtype)
+        if dtype is not None:
+            dtype = numpy.dtype(dtype)
+        self.dtype = dtype
+        if shape is not None:
+            shape = tuple(shape)
         self.shape = shape
-        self[...] = 0
+        if dtype is not None:
+            self[...] = 0
         self.flush()
         return self
 

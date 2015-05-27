@@ -5,7 +5,7 @@ import json
 import numpy
 ap = ArgumentParser()
 
-ap.add_argument('--check', action=store_true, default=False, 
+ap.add_argument('--check', action='store_true', default=False, 
         help="Test if output contains identical information to input")
 
 
@@ -34,7 +34,7 @@ def main():
                 elif type in ('IMAGE_HDU'):
                     data = hdu[:, :]
             else:
-                data = numpy.empty(0, dtype='i8')
+                data = None
 
             if ns.check:
                 block = fout["HDU-%04d" % hdui]
@@ -42,12 +42,20 @@ def main():
                     for key in header:
                         assert header[key] == block.metadata[key]
 
-                    assert (block[...] == data).all()
+                    if data is not None:
+                        assert (block[...] == data).all()
+                    else:
+                        assert block[...] is None
             else:
-                block = fout.create_block("HDU-%04d" % hdui,
-                    data.shape, data.dtype)
+                if data is not None:
+                    block = fout.create_block("HDU-%04d" % hdui,
+                        data.shape, data.dtype)
+                else:
+                    block = fout.create_block("HDU-%04d" % hdui,
+                        (0,), None)
                 with block:
                     block.metadata.update(header)
-                    block[...] = data
+                    if data is not None:
+                        block[...] = data
 
 main()
